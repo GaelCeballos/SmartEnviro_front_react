@@ -3,37 +3,53 @@ import { Droplet } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { useNavigate } from 'react-router-dom';
+
+// Importamos el servicio que se comunica con Laravel
+import { loginUser } from '../../services/authService';
 
 export const LoginPage = () => {
+  const navigate = useNavigate(); 
+  
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(''); // <-- Nuevo estado para guardar errores
+  const [password, setPassword] = useState(''); 
+  const [error, setError] = useState('');       
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError(''); // Limpiamos errores anteriores al volver a intentar
+    setError('');
 
-    // 1. Validación de campos vacíos
+    // Validaciones locales
     if (!email.trim() || !password.trim()) {
       setError('Por favor, completa todos los campos.');
-      return; // Detiene la ejecución aquí
+      return;
     }
 
-    // 2. Validación básica de formato de correo
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setError('Ingresa un correo electrónico válido.');
       return;
     }
 
-    // 3. Simulación de error de credenciales (Luego lo conectaremos a Laravel)
-    if (email === 'admin@admin.com' && password === '123456') {
-      console.log('Iniciando sesión con:', email, password);
-      alert(`Bienvenido: ${email}`);
+    setIsLoading(true);
+
+    // Llamamos a la función que se conecta con Laravel
+    const { ok, data } = await loginUser(email, password);
+
+    if (ok && data.status === 'success') {
+      // Guardamos el token y los datos del usuario en el navegador
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.data.user));
+      
+      // Viajamos al DASHBOARD
+      navigate('/dashboard'); 
     } else {
-      // Si escriben cualquier otra cosa, mostramos error de credenciales
-      setError('Correo o contraseña incorrectos. Intenta de nuevo.');
+      // Mostramos el error si las credenciales son incorrectas o hay fallo de red
+      setError(data.message || 'Error al iniciar sesión. Intenta de nuevo.');
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -56,7 +72,6 @@ export const LoginPage = () => {
       <Card>
         <form onSubmit={handleLogin} className="flex flex-col space-y-4">
           
-          {/* Mensaje de Error Condicional */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium text-center animate-pulse">
               {error}
@@ -70,8 +85,9 @@ export const LoginPage = () => {
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
-              setError(''); // Ocultar error cuando el usuario empieza a escribir de nuevo
+              setError(''); 
             }}
+            disabled={isLoading}
           />
           
           <Input 
@@ -81,23 +97,36 @@ export const LoginPage = () => {
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              setError(''); // Ocultar error cuando el usuario empieza a escribir de nuevo
+              setError(''); 
             }}
+            disabled={isLoading}
           />
           
           <div className="pt-2">
-            <Button type="submit">
-              Iniciar Sesión
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
             </Button>
           </div>
         </form>
       </Card>
 
-      {/* Footer / Recuperar contraseña */}
-      <div className="mt-8 text-center">
-        <button className="text-primary font-semibold text-base hover:underline">
+      {/* Footer / Recuperar contraseña y Registro */}
+      <div className="mt-8 flex flex-col items-center space-y-4">
+        <button className="text-primary font-semibold text-base hover:underline" type="button">
           ¿Olvidaste tu contraseña?
         </button>
+        
+        {/* Enlace para ir a la vista de registro */}
+        <div className="text-slate-500">
+          ¿No tienes cuenta?{' '}
+          <button 
+            onClick={() => navigate('/registro')} 
+            className="text-primary font-bold hover:underline" 
+            type="button"
+          >
+            Regístrate aquí
+          </button>
+        </div>
       </div>
       
     </div>

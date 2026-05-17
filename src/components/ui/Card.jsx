@@ -1,8 +1,12 @@
 import React from 'react';
 
-export const Card = ({ children, className = '' }) => {
+export const Card = ({ children, className = '', onClick, ...props }) => {
   return (
-    <div className={`bg-surface p-5 rounded-2xl shadow-sm border border-gray-100 w-full ${className}`}>
+    <div 
+      className={`bg-white shadow-sm border-0 rounded-2xl ${className}`} 
+      onClick={onClick}
+      {...props}
+    >
       {children}
     </div>
   );
