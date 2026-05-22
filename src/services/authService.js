@@ -6,7 +6,7 @@
  * recuperación de contraseña, etc. según las necesidades de la aplicación.
  */
 
-const API_URL = ' https://fdd4-200-56-155-6.ngrok-free.app'; 
+const API_URL = 'https://ea7f-177-224-130-250.ngrok-free.app'; 
 
 export const loginUser = async (email, password) => {
   try {
@@ -14,13 +14,23 @@ export const loginUser = async (email, password) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true' // Añadido por precaución para ngrok
       },
       body: JSON.stringify({ email, password })
     });
 
     const data = await response.json();
     
+    // NUEVO: Si la respuesta es exitosa, guardamos el token en localStorage
+    if (response.ok) {
+      // Nota: Dependiendo de tu backend, el token puede venir en 'data.token' o 'data.access_token'.
+      const token = data.token || data.access_token;
+      if (token) {
+        localStorage.setItem('auth_token', token);
+      }
+    }
+
     // Devolvemos tanto el status de la petición como los datos
     return { ok: response.ok, data };
   } catch (error) {
@@ -70,6 +80,11 @@ export const logoutUser = async (token) => {
     const textResponse = await response.text();
     if (textResponse) {
         data = JSON.parse(textResponse);
+    }
+
+    // Opcional: Podrías limpiar el localStorage aquí también si fue exitoso
+    if (response.ok) {
+        localStorage.removeItem('auth_token');
     }
 
     return { ok: response.ok, data };

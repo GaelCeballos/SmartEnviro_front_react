@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Waves, Plus, Loader2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { BottomNav } from '../../components/layout/BottomNav';
-import { getUserDevices, toggleDeviceState } from '../../services/deviceService'; // Se añade la importación
+import { getUserDevices, toggleDeviceState } from '../../services/deviceService';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -18,10 +18,7 @@ export const DashboardPage = () => {
       const { ok, data } = await getUserDevices();
 
       if (ok && data.status === 'success') {
-        // Mapeamos los datos del backend al formato que necesita nuestra UI
         const mappedDevices = data.data.map((device) => {
-          
-          // Determinamos si es actuador (ej. si tiene bomba) o sensor
           const isActuator = device.capabilities.has_pump;
           
           return {
@@ -29,11 +26,8 @@ export const DashboardPage = () => {
             name: device.name,
             subtitle: device.is_online ? device.current_state : 'DESCONECTADO',
             type: isActuator ? 'actuator' : 'sensor',
-            // Si tiene sensor de humedad, mostramos el %; si no, mostramos las olas
             iconType: device.capabilities.has_humidity ? 'percentage' : 'waves',
-            // Le damos formato a la humedad si existe
             value: device.last_humidity ? `${device.last_humidity}%` : null,
-            // Está activo si su current_state es ON
             isActive: device.current_state === 'ON',
           };
         });
@@ -48,36 +42,36 @@ export const DashboardPage = () => {
     fetchDevices();
   }, []);
 
-  // Función conectada a tu ruta POST '/my-devices/{id}/toggle'
+  // Función centralizada para alternar estado
   const toggleDevice = async (id) => {
-    // 1. Buscamos el dispositivo actual en nuestro estado local
     const deviceToUpdate = devices.find(device => device.id === id);
     if (!deviceToUpdate) return;
 
-    // 2. Definimos cuál será el siguiente estado basándonos en el actual
     const nextState = deviceToUpdate.isActive ? 'OFF' : 'ON';
-
-    // 3. Enviamos la petición al backend de Laravel
+    
+    // Enviamos la petición
     const { ok, data } = await toggleDeviceState(id, nextState);
 
-    if (ok && data.status === 'success') {
-      // 4. Si el backend responde OK, actualizamos el estado visual
+    // Verificamos el 'success' que manda tu backend
+    if (ok && data?.status === 'success') {
+      
+      // EXTRAEMOS el estado real que te respondió Laravel (ej. "OFF")
+      const finalState = data.current_state || nextState;
+
       setDevices(prevDevices => 
         prevDevices.map(device => 
           device.id === id 
             ? { 
                 ...device, 
-                isActive: data.current_state === 'ON',
-                // Si el dispositivo está "DESCONECTADO" conservamos ese texto, sino ponemos el nuevo estado de la API (ON/OFF)
-                subtitle: device.subtitle === 'DESCONECTADO' ? 'DESCONECTADO' : data.current_state 
+                isActive: finalState === 'ON', // Se apaga visualmente si es OFF
+                subtitle: device.subtitle === 'DESCONECTADO' ? 'DESCONECTADO' : finalState 
               } 
             : device
         )
       );
     } else {
-      // Manejo de errores por si falla la red o la validación del backend
-      console.error("No se pudo cambiar el estado:", data.message);
-      alert(data.message || "Error al intentar cambiar el estado del dispositivo.");
+      console.error("No se pudo cambiar el estado:", data);
+      alert(data?.message || "Error al intentar cambiar el estado del dispositivo.");
     }
   };
 
@@ -97,17 +91,15 @@ export const DashboardPage = () => {
         </button>
       </div>
 
-      {/* Título de sección */}
       <div className="px-6 mb-4">
         <h2 className="text-[15px] font-semibold text-slate-500">
           Mis Dispositivos Conectados
         </h2>
       </div>
 
-      {/* 2. Lista de Dispositivos (Deslizable) */}
+      {/* 2. Lista de Dispositivos */}
       <div className="px-6 flex flex-col space-y-4 overflow-y-auto pb-28">
         
-        {/* Estado de Carga */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-10">
             <Loader2 className="animate-spin text-primary mb-2" size={32} />
@@ -115,14 +107,12 @@ export const DashboardPage = () => {
           </div>
         )}
 
-        {/* Estado sin dispositivos */}
         {!isLoading && devices.length === 0 && (
           <div className="text-center py-10 bg-white rounded-2xl shadow-sm border border-slate-100">
             <p className="text-slate-500 font-medium">No tienes dispositivos vinculados.</p>
           </div>
         )}
 
-        {/* Renderizado de tarjetas */}
         {!isLoading && devices.map((device) => (
           <Card key={device.id} className="flex items-center justify-between p-4 py-5 shadow-sm border-0 bg-white">
             
@@ -151,34 +141,41 @@ export const DashboardPage = () => {
             <div className="pl-2">
               {device.type === 'actuator' ? (
                 <button 
-                  onClick={() => toggleDevice(device.id)}
-                  className={`w-[50px] h-[28px] flex items-center rounded-full p-1 transition-colors duration-300 ${
-                    device.isActive ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                >
-                  <div 
-                    className={`bg-white w-[20px] h-[20px] rounded-full shadow-sm transform transition-transform duration-300 ${
-                      device.isActive ? 'translate-x-[22px]' : 'translate-x-0'
-                    }`} 
-                  />
-                </button>
-              ) : (
-                <div 
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider ${
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation(); 
+                    toggleDevice(device.id);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-colors duration-200 ${
                     device.isActive 
                       ? 'bg-[#E6F8F5] text-primary' 
                       : 'bg-[#F3F4F6] text-slate-400'
                   }`}
                 >
                   {device.isActive ? 'ON' : 'OFF'}
-                </div>
+                </button>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation(); // <-- ESTO EVITA QUE FALLE
+                    toggleDevice(device.id); // <-- USAMOS LA MISMA LÓGICA DE ARRIBA
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-colors duration-200 ${
+                    device.isActive 
+                      ? 'bg-[#E6F8F5] text-primary' 
+                      : 'bg-[#F3F4F6] text-slate-400 hover:bg-slate-200'
+                  }`} 
+                >
+                  {device.isActive ? 'ON' : 'OFF'}
+                </button>
               )}
             </div>
           </Card>
         ))}
       </div>
 
-      {/* 3. Bottom Navigation Component */}
+      {/* 3. Bottom Navigation */}
       <BottomNav />
 
     </div>
