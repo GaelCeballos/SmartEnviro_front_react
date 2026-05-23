@@ -6,7 +6,7 @@
  * recuperación de contraseña, etc. según las necesidades de la aplicación.
  */
 
-const API_URL = 'https://smart-enviro-api.onrender.com/'; 
+const API_URL = 'https://smart-enviro-api.onrender.com'; 
 
 export const loginUser = async (email, password) => {
   try {
