@@ -14,8 +14,7 @@ export const loginUser = async (email, password) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true' // Añadido por precaución para ngrok
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ email, password })
     });
@@ -46,8 +45,7 @@ export const registerUser = async (name, email, password, password_confirmation)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true' // Para saltar la pantalla de ngrok
+        'Accept': 'application/json'
       },
       body: JSON.stringify({ name, email, password, password_confirmation })
     });
@@ -71,7 +69,6 @@ export const logoutUser = async (token) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${cleanToken}` 
       }
     });

@@ -24,7 +24,6 @@ export const getUserDevices = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}` 
       }
     });
@@ -50,7 +49,6 @@ export const getAvailableDevices = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}`
       }
     });
@@ -75,7 +73,6 @@ export const claimDevice = async (deviceId) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}`
       }
     });
@@ -100,7 +97,6 @@ export const toggleDeviceState = async (deviceId, state) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ state }) 
@@ -131,7 +127,6 @@ export const getDeviceDetails = async (id) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}` 
       }
     });
@@ -156,7 +151,6 @@ export const getDeviceSensorData = async (id) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}` 
       }
     });
@@ -178,7 +172,6 @@ export const updateDeviceSettings = async (id, settings) => {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'ngrok-skip-browser-warning': 'true',
       'Authorization': `Bearer ${token}` 
     };
 
@@ -227,7 +220,6 @@ export const getDeviceSensorHistory = async (id, period, sensorTypeId = 1) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         'Authorization': `Bearer ${token}` 
       }
     });
