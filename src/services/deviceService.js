@@ -10,7 +10,7 @@
 //                     Funciones para DashboardPage
 // ============================================================================
 
-const API_URL = 'https://smart-enviro-api.onrender.com/';
+const API_URL = 'https://smart-enviro-api.onrender.com';
 
 /**
  * Obtiene los dispositivos del usuario autenticado
