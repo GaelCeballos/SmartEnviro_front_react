@@ -8,6 +8,8 @@ import { ReportsPage } from './pages/main/ReportsPage';
 import { ProfilePage } from './pages/main/ProfilePage';
 import { NotificationsPage } from './pages/main/NotificationsPage';
 import { ChangePasswordPage } from './pages/main/ChangePasswordPage';
+import { SettingsPage } from './pages/main/SettingsPage';
+import { UpdateInfoPage } from './pages/main/UpdateInfoPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 
 function App() {
@@ -27,8 +29,10 @@ function App() {
           {/* RUTAS CONECTADAS DIRECTAMENTE A TUS ARCHIVOS */}
           <Route path="/perfil/notificaciones" element={<NotificationsPage />} />
           
-          {/* Conectamos la ruta de configuración directo a la pantalla de cambiar contraseña */}
-          <Route path="/perfil/configuracion" element={<ChangePasswordPage />} />
+          {/* Configuración: menú con opciones -> info / contraseña */}
+          <Route path="/perfil/configuracion" element={<SettingsPage />} />
+          <Route path="/perfil/configuracion/informacion" element={<UpdateInfoPage />} />
+          <Route path="/perfil/configuracion/contraseña" element={<ChangePasswordPage />} />
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
