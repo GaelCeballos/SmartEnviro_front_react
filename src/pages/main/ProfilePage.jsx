@@ -62,19 +62,10 @@ export const ProfilePage = () => {
           className="flex items-center justify-between p-4 shadow-sm border-0 bg-white rounded-2xl active:bg-slate-50 cursor-pointer"
         >
           <div className="flex items-center gap-4">
-            <Bell className="text-primary" size={22} />
+            <Bell className="text-primary" size={30} />
             <span className="text-[#1F2937] font-semibold text-[15px]">Notificaciones</span>
           </div>
-          <ChevronRight className="text-slate-400" size={20} />
-        </Card>
-
-        {/* Menú: Seguridad */}
-        <Card className="flex items-center justify-between p-4 shadow-sm border-0 bg-white rounded-2xl active:bg-slate-50 cursor-pointer">
-          <div className="flex items-center gap-4">
-            <Shield className="text-primary" size={22} />
-            <span className="text-[#1F2937] font-semibold text-[15px]">Seguridad</span>
-          </div>
-          <ChevronRight className="text-slate-400" size={20} />
+          <ChevronRight className="text-slate-400" size={40} />
         </Card>
 
         {/* Menú: Configuración */}
@@ -83,10 +74,10 @@ export const ProfilePage = () => {
           className="flex items-center justify-between p-4 shadow-sm border-0 bg-white rounded-2xl active:bg-slate-50 cursor-pointer"
         >
           <div className="flex items-center gap-4">
-            <Settings className="text-primary" size={22} />
+            <Settings className="text-primary" size={30} />
             <span className="text-[#1F2937] font-semibold text-[15px]">Configuración</span>
           </div>
-          <ChevronRight className="text-slate-400" size={20} />
+          <ChevronRight className="text-slate-400" size={40} />
         </Card>
 
         {/* Botón Cerrar Sesión */}
@@ -95,8 +86,8 @@ export const ProfilePage = () => {
           className={`flex items-center p-4 shadow-sm border-0 bg-white rounded-2xl mt-2 ${isLoggingOut ? 'opacity-50' : 'active:bg-red-50 cursor-pointer'}`}
         >
           <div className="flex items-center gap-4">
-            <LogOut className="text-red-500" size={22} />
-            <span className="text-red-600 font-semibold text-[15px]">
+            <LogOut className="text-red-500" size={40} />
+            <span className="text-red-600 font-semibold text-[17px]">
               {isLoggingOut ? 'Cerrando sesión...' : 'Cerrar Sesión'}
             </span>
           </div>

@@ -10,7 +10,7 @@
 //                     Funciones para DashboardPage
 // ============================================================================
 
-const API_URL = 'https://smart-enviro-api.onrender.com';
+const API_URL = 'https://d12d-200-56-155-6.ngrok-free.app';
 
 /**
  * Obtiene los dispositivos del usuario autenticado

@@ -15,6 +15,7 @@ export const UpdateInfoPage = () => {
   const [email, setEmail] = useState(user.email || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,8 +32,8 @@ export const UpdateInfoPage = () => {
       // actualizar user_data local
       const updatedUser = { ...user, name, email };
       localStorage.setItem('user_data', JSON.stringify(updatedUser));
-      alert(res.data.message || 'Perfil actualizado correctamente');
-      navigate(-1);
+      setSuccess(res.data.message || 'Perfil actualizado correctamente');
+      setTimeout(() => navigate(-1), 2000);
     } else {
       // manejar errores de validación
       if (res.data && res.data.errors) {
@@ -59,6 +60,7 @@ export const UpdateInfoPage = () => {
         </div>
 
         {error && <div className="text-red-600 font-medium">{error}</div>}
+        {success && <div className="text-green-600 font-medium">{success}</div>}
 
         <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" />
         <Input label="Correo" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" />

@@ -12,6 +12,7 @@ export const ChangePasswordPage = () => {
   const [confirmPass, setConfirmPass] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -29,8 +30,8 @@ export const ChangePasswordPage = () => {
     setLoading(false);
 
     if (res.ok) {
-      alert(res.data.message || 'Contraseña actualizada correctamente');
-      navigate(-1);
+      setSuccess(res.data.message || 'Contraseña actualizada correctamente');
+      setTimeout(() => navigate(-1), 2000);
     } else {
       if (res.data && res.data.errors) {
         const first = Object.values(res.data.errors)[0];
@@ -56,6 +57,7 @@ export const ChangePasswordPage = () => {
         </div>
 
         {error && <div className="text-red-600 font-medium">{error}</div>}
+        {success && <div className="text-green-600 font-medium">{success}</div>}
 
         <Input 
           label="Contraseña Actual" 

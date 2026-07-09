@@ -7,5 +7,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom', // Simula un navegador en la terminal
     globals: true         // Te permite usar describe, it, expect sin importarlos cada vez
+  },
+  server: {
+    port: 3000
   }
 })

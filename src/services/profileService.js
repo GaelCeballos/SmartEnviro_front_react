@@ -1,9 +1,9 @@
-const API_URL = 'https://smart-enviro-api.onrender.com';
+const API_URL = 'https://d12d-200-56-155-6.ngrok-free.app';
 
 export const updateProfileInfo = async (token, payload) => {
   try {
     const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
-    const response = await fetch(`${API_URL}/api/profile/update-info`, {
+    const response = await fetch(`${API_URL}/api/user/profile`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ export const updateProfileInfo = async (token, payload) => {
 export const updateProfilePassword = async (token, payload) => {
   try {
     const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
-    const response = await fetch(`${API_URL}/api/profile/update-password`, {
+    const response = await fetch(`${API_URL}/api/user/password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
