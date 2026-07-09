@@ -3,16 +3,43 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Lock } from 'lucide-react';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { updateProfilePassword } from '../../services/profileService';
 
 export const ChangePasswordPage = () => {
   const navigate = useNavigate();
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    alert("Contraseña actualizada con éxito");
-    navigate(-1);
+    setLoading(true);
+    setError(null);
+
+    const token = localStorage.getItem('auth_token');
+    const payload = {
+      current_password: currentPass,
+      password: newPass,
+      password_confirmation: confirmPass,
+    };
+
+    const res = await updateProfilePassword(token, payload);
+    setLoading(false);
+
+    if (res.ok) {
+      setSuccess(res.data.message || 'Contraseña actualizada correctamente');
+      setTimeout(() => navigate(-1), 2000);
+    } else {
+      if (res.data && res.data.errors) {
+        const first = Object.values(res.data.errors)[0];
+        setError(Array.isArray(first) ? first[0] : first);
+      } else {
+        setError(res.data.message || 'Error al actualizar contraseña');
+      }
+    }
   };
 
   return (
@@ -29,6 +56,9 @@ export const ChangePasswordPage = () => {
           <Lock size={48} className="text-primary" />
         </div>
 
+        {error && <div className="text-red-600 font-medium">{error}</div>}
+        {success && <div className="text-green-600 font-medium">{success}</div>}
+
         <Input 
           label="Contraseña Actual" 
           type="password" 
@@ -43,11 +73,20 @@ export const ChangePasswordPage = () => {
           value={newPass}
           onChange={(e) => setNewPass(e.target.value)}
         />
+        <Input 
+          label="Confirmar Nueva Contraseña" 
+          type="password" 
+          placeholder="••••••••"
+          value={confirmPass}
+          onChange={(e) => setConfirmPass(e.target.value)}
+        />
 
         <div className="pt-4">
-          <Button type="submit">Actualizar Contraseña</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Actualizando...' : 'Actualizar Contraseña'}</Button>
         </div>
       </form>
     </div>
   );
 };
+
+export default ChangePasswordPage;
