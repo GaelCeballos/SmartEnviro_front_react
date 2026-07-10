@@ -6,17 +6,21 @@ import { DeviceDetailPage } from './pages/main/DeviceDetailPage';
 import { AddDevicePage } from './pages/main/AddDevicePage'; 
 import { ReportsPage } from './pages/main/ReportsPage';
 import { ProfilePage } from './pages/main/ProfilePage';
-import { NotificationsPage } from './pages/main/NotificationsPage';
+import NotificationsPage from './pages/main/NotificationsPage_new';
 import { ChangePasswordPage } from './pages/main/ChangePasswordPage';
 import { SettingsPage } from './pages/main/SettingsPage';
 import { UpdateInfoPage } from './pages/main/UpdateInfoPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { NotificationProvider } from './contexts/NotificationContext';
+import NotificationToast from './components/ui/NotificationToast';
 
 function App() {
   return (
     <div className="w-full max-w-md min-h-screen bg-background shadow-2xl relative overflow-x-hidden">
       <BrowserRouter>
-        <Routes>
+        <NotificationProvider>
+          <NotificationToast />
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/registro" element={<RegisterPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -36,6 +40,7 @@ function App() {
           
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        </NotificationProvider>
       </BrowserRouter>
     </div>
   );
