@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Bell, Shield, Settings, LogOut, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { BottomNav } from '../../components/layout/BottomNav';
+import NotificationContext from '../../contexts/NotificationContext';
 
-// 1. Importamos la función de logout
+//Importamos la función de logout
 import { logoutUser } from '../../services/authService';
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { unreadCount } = useContext(NotificationContext);
 
   // Recuperamos los datos del usuario logueado para mostrarlos en la tarjeta
   const userDataString = localStorage.getItem('user_data');
   const user = userDataString ? JSON.parse(userDataString) : { name: 'Usuario', email: 'Sin correo' };
 
-  // 2. Función para manejar el cierre de sesión
+  //Función para manejar el cierre de sesión
   const handleLogout = async () => {
     setIsLoggingOut(true);
     const token = localStorage.getItem('auth_token');
@@ -62,7 +64,15 @@ export const ProfilePage = () => {
           className="flex items-center justify-between p-4 shadow-sm border-0 bg-white rounded-2xl active:bg-slate-50 cursor-pointer"
         >
           <div className="flex items-center gap-4">
-            <Bell className="text-primary" size={30} />
+            <div className="relative">
+              <Bell className="text-primary" size={30} />
+              { /* Badge */ }
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
             <span className="text-[#1F2937] font-semibold text-[15px]">Notificaciones</span>
           </div>
           <ChevronRight className="text-slate-400" size={40} />
