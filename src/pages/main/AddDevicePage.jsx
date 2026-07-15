@@ -4,7 +4,7 @@ import { ChevronLeft, RefreshCw, Wifi, Loader2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 
 // Importamos los servicios recién creados
-import { getAvailableDevices, claimDevice } from '../../services/deviceService';
+import { getAvailableDevices, addDevice } from '../../services/deviceService';
 
 export const AddDevicePage = () => {
   const navigate = useNavigate();
@@ -33,7 +33,7 @@ export const AddDevicePage = () => {
   const handleBindDevice = async (id) => {
     setIsLinkingId(id); // Bloqueamos visualmente solo este botón
 
-    const { ok, data } = await claimDevice(id);
+    const { ok, data } = await addDevice(id);
 
     if (ok && data.status === 'success') {
       alert('¡Dispositivo vinculado con éxito!');
