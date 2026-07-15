@@ -1,4 +1,4 @@
-const API_URL = 'https://d12d-200-56-155-6.ngrok-free.app';
+const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
 
 export const updateProfileInfo = async (token, payload) => {
   try {

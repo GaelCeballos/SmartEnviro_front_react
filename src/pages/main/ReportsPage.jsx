@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { BottomNav } from '../../components/layout/BottomNav'; 
 import { getUserDevices, getDeviceSensorHistory } from '../../services/deviceService';
-import { Loader2, Droplet, Activity, Cpu, Waves } from 'lucide-react';
+import { Loader2, Droplet, Activity, Cpu, Waves, Sun, Lightbulb } from 'lucide-react';
 
 export const ReportsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [reportData, setReportData] = useState({
     avgHumidity: 0,
+    avgLuminosity: 0,
     totalDevices: 0,
     onlineDevices: 0,
     wateringDevices: 0,
+    activeLights: 0,
+    hasLightDevices: false,
     healthStatus: 'Calculando...'
   });
 
@@ -27,6 +30,28 @@ export const ReportsPage = () => {
           const total = devices.length;
           const online = devices.filter(d => d.is_online).length;
           const watering = devices.filter(d => d.current_state === 'ON' || d.current_state === 'WATERING').length;
+
+          // Detectar si existe algún dispositivo con capacidades de luz/iluminación
+          const hasLight = devices.some(d => 
+            d.capabilities?.has_light_sensor === true || 
+            d.capabilities?.has_light === true ||
+            d.last_luminosity !== undefined
+          );
+
+          // Contar focos encendidos actualmente
+          const activeLights = devices.filter(d => 
+            d.settings?.lamp_state === 'ON' || 
+            d.current_lamp_state === 'ON'
+          ).length;
+
+          // Calcular promedio de luminosidad en base a dispositivos con sensor activo
+          const devicesWithLuminosity = devices.filter(d => 
+            d.last_luminosity !== null && 
+            d.last_luminosity !== undefined
+          );
+          const avgLum = devicesWithLuminosity.length > 0
+            ? (devicesWithLuminosity.reduce((sum, d) => sum + parseFloat(d.last_luminosity), 0) / devicesWithLuminosity.length)
+            : 0;
 
           // 2. Obtener el historial de la SEMANA de TODOS los dispositivos
           const historyPromises = devices.map(d => getDeviceSensorHistory(d.id, 'week', 1));
@@ -63,9 +88,12 @@ export const ReportsPage = () => {
 
           setReportData({
             avgHumidity: avgHum.toFixed(1),
+            avgLuminosity: avgLum.toFixed(0),
             totalDevices: total,
             onlineDevices: online,
             wateringDevices: watering,
+            activeLights: activeLights,
+            hasLightDevices: hasLight,
             healthStatus: health,
             healthColor: healthColor
           });
@@ -151,6 +179,41 @@ export const ReportsPage = () => {
                 <p className="text-[10px] text-slate-400 mt-1">En tiempo real</p>
               </div>
             </Card>
+
+            {/* SI TIENE UN DISPOSITIVO DE LUZ: Mostrar Estado Global de Luz y Luminosidad Promedio */}
+            {reportData.hasLightDevices && (
+              <>
+                {/* Luminosidad Promedio */}
+                <Card className="p-5 shadow-sm border-0 bg-white rounded-3xl flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center mb-4">
+                    <Sun size={20} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-xs font-semibold uppercase mb-1">Luminosidad Prom.</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-black text-slate-800">{reportData.avgLuminosity}</span>
+                      <span className="text-lg font-bold text-slate-400">lx</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">Tiempo real</p>
+                  </div>
+                </Card>
+
+                {/* Estado Global de Luz (Focos Activos) */}
+                <Card className="p-5 shadow-sm border-0 bg-white rounded-3xl flex flex-col justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-yellow-50 flex items-center justify-center mb-4">
+                    <Lightbulb size={20} className="text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-slate-400 text-xs font-semibold uppercase mb-1">Focos Activos</p>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-black text-slate-800">{reportData.activeLights}</span>
+                      <span className="text-sm font-bold text-slate-400">iluminados</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">En tiempo real</p>
+                  </div>
+                </Card>
+              </>
+            )}
 
           </div>
 

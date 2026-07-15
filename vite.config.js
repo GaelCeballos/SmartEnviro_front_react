@@ -9,6 +9,14 @@ export default defineConfig({
     globals: true         // Te permite usar describe, it, expect sin importarlos cada vez
   },
   server: {
-    port: 3000
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://254f-200-56-155-6.ngrok-free.app',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path
+      }
+    }
   }
 })

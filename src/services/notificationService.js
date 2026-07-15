@@ -1,4 +1,4 @@
-const API_URL = 'https://d12d-200-56-155-6.ngrok-free.app';
+const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
 
 export const getNotifications = async (token) => {
   try {
@@ -23,7 +23,7 @@ export const markNotificationRead = async (token, id) => {
   try {
     const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
     const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
-      method: 'POST',
+      method: 'PATCH', 
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
