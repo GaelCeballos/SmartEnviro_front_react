@@ -1,4 +1,4 @@
-const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
+const API_URL = 'https://smart-enviro-api.onrender.com';
 /**
  * MOTOR CENTRAL DE PETICIONES (API REQUEST)
  * Procesa todas las llamadas HTTP inyectando tokens y resolviendo try/catch en un solo lugar.
@@ -12,8 +12,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'ngrok-skip-browser-warning': 'true'
+        'Authorization': `Bearer ${token}`
       }
     };
 
@@ -29,7 +28,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
     if (contentType && contentType.includes("application/json")) {
       data = await response.json();
     } else {
-      // Si el servidor devolvió HTML (error 500, advertencia de Ngrok, etc.)
+      // Si el servidor devolvió HTML (error 500, etc.)
       const textError = await response.text();
       console.warn("⚠️ Advertencia: El servidor respondió con HTML en lugar de JSON:", textError.substring(0, 200));
       return { 
@@ -47,7 +46,7 @@ const apiRequest = async (endpoint, method = 'GET', body = null) => {
 
 /**
  * ============================================================================
- * 1. OBTENCIÓN Y CONSULTA DE DISPOSITIVOS
+ * OBTENCIÓN Y CONSULTA DE DISPOSITIVOS
  * ============================================================================
  */
 
@@ -80,7 +79,7 @@ export const getDeviceSensorHistory = (deviceId, sensorTypeKey, filter) => {
 
 /**
  * ============================================================================
- * 2. VINCULACIÓN DE NUEVOS DISPOSITIVOS 
+ * VINCULACIÓN DE NUEVOS DISPOSITIVOS 
  * ============================================================================
  */
 
@@ -102,7 +101,7 @@ export const claimDevice = addDevice;
 
 /**
  * ============================================================================
- * 3. CONTROL MANUAL Y PROPIEDADES (NÚCLEO DINÁMICO)
+ * CONTROL MANUAL Y PROPIEDADES (NÚCLEO DINÁMICO)
  * ============================================================================
  */
 
@@ -125,7 +124,7 @@ export const toggleLampState = (deviceId, state) =>
 
 /**
  * ============================================================================
- * 4. GUARDADO DE BLOQUES DE CONFIGURACIÓN
+ * GUARDADO DE BLOQUES DE CONFIGURACIÓN
  * ============================================================================
  */
 

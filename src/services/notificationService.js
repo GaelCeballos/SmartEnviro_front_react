@@ -1,62 +1,57 @@
-const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
+/**
+ * Servicio para gestionar las notificaciones del usuario (PRODUCCIÓN)
+ */
 
-export const getNotifications = async (token) => {
-  try {
-    const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
-    const res = await fetch(`${API_URL}/api/notifications`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${cleanToken}`,
-        'ngrok-skip-browser-warning': 'true',
-      },
-    });
-    const data = await res.json();
-    return { ok: res.ok, data };
-  } catch (error) {
-    console.error('notificationService.getNotifications', error);
-    return { ok: false, data: { message: 'No se pudo conectar con el servidor.' } };
-  }
-};
+const API_URL = 'https://smart-enviro-api.onrender.com';
 
-export const markNotificationRead = async (token, id) => {
+/**
+ * MOTOR CENTRAL DE PETICIONES PRIVADAS
+ * Autogestiona el Token y protege la app de errores HTML (500, 502, etc.)
+ */
+const apiRequest = async (endpoint, method = 'GET', body = null) => {
   try {
-    const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
-    const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
-      method: 'PATCH', 
+    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
+    
+    const config = {
+      method,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${cleanToken}`,
-        'ngrok-skip-browser-warning': 'true',
-      },
-    });
-    const data = await res.json();
-    return { ok: res.ok, data };
+        'Authorization': `Bearer ${token}`
+      }
+    };
+
+    if (body) {
+      config.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_URL}${endpoint}`, config);
+    
+    const contentType = response.headers.get("content-type");
+    let data = {};
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      console.warn(`⚠️ [notificationService] Respuesta HTML en ${endpoint} (${response.status})`);
+      return { ok: false, data: { message: `Error del servidor (Código ${response.status}).` } };
+    }
+    
+    return { ok: response.ok, data };
   } catch (error) {
-    console.error('notificationService.markNotificationRead', error);
+    console.error(`❌ Error de red en notificationService [${method} ${endpoint}]:`, error);
     return { ok: false, data: { message: 'No se pudo conectar con el servidor.' } };
   }
 };
 
-export const markAllNotificationsRead = async (token) => {
-  try {
-    const cleanToken = token ? token.replace(/['\"]+/g, '') : '';
-    const res = await fetch(`${API_URL}/api/notifications/read-all`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${cleanToken}`,
-        'ngrok-skip-browser-warning': 'true',
-      },
-    });
-    const data = await res.json();
-    return { ok: res.ok, data };
-  } catch (error) {
-    console.error('notificationService.markAllNotificationsRead', error);
-    return { ok: false, data: { message: 'No se pudo conectar con el servidor.' } };
-  }
-};
+//Obtener todas las notificaciones
+export const getNotifications = () => 
+  apiRequest('/api/notifications', 'GET');
 
-export default { getNotifications, markNotificationRead, markAllNotificationsRead };
+// Marcar una notificación específica como leída
+export const markNotificationRead = (id) => 
+  apiRequest(`/api/notifications/${id}/read`, 'PATCH');
+
+//Marcar todas las notificaciones como leídas
+export const markAllNotificationsRead = () => 
+  apiRequest('/api/notifications/read-all', 'POST');
