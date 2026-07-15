@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Waves, Plus, Loader2 } from 'lucide-react';
+import { Waves, Plus, Loader2, Droplet } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { BottomNav } from '../../components/layout/BottomNav';
-import { getUserDevices, toggleDeviceState } from '../../services/deviceService';
+import { getUserDevices, toggleDeviceState, togglePumpState, toggleLampState } from '../../services/deviceService';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -19,16 +19,14 @@ export const DashboardPage = () => {
 
       if (ok && data.status === 'success') {
         const mappedDevices = data.data.map((device) => {
-          const isActuator = device.capabilities.has_pump;
-          
           return {
             id: device.id,
             name: device.name,
-            subtitle: device.is_online ? device.current_state : 'DESCONECTADO',
-            type: isActuator ? 'actuator' : 'sensor',
-            iconType: device.capabilities.has_humidity ? 'percentage' : 'waves',
-            value: device.last_humidity ? `${device.last_humidity}%` : null,
-            isActive: device.current_state === 'ON',
+            subtitle: device.is_online ? device.state || device.current_state : 'DESCONECTADO',
+            capabilities: device.capabilities || {},
+            last_humidity: device.last_humidity,
+            last_luminosity: device.last_luminosity,
+            settings: device.settings || {},
           };
         });
 
@@ -115,59 +113,97 @@ export const DashboardPage = () => {
 
         {!isLoading && devices.map((device) => (
           <Card key={device.id} className="flex items-center justify-between p-4 py-5 shadow-sm border-0 bg-white">
-            
+
             <div 
               className="flex items-center gap-4 flex-1 cursor-pointer"
               onClick={() => navigate(`/device/${device.id}`)}
             >
               <div className="w-14 h-14 rounded-2xl bg-[#F4F6F8] flex items-center justify-center flex-shrink-0">
-                {device.iconType === 'percentage' && device.value ? (
-                  <span className="text-primary font-bold text-lg">{device.value}</span>
-                ) : (
-                  <Waves className="text-primary" size={24} strokeWidth={2.5} />
-                )}
+                <Waves className="text-primary" size={24} strokeWidth={2.5} />
               </div>
-              
-              <div className="flex flex-col">
-                <span className="text-[#1F2937] font-semibold text-[15px] leading-tight">
-                  {device.name}
-                </span>
-                <span className="text-slate-400 text-[13px] mt-1 font-medium">
-                  {device.subtitle}
-                </span>
+
+              <div className="flex flex-col flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#1F2937] font-semibold text-[15px] leading-tight">{device.name}</span>
+                </div>
+                <span className="text-slate-400 text-[13px] mt-1 font-medium">{device.subtitle}</span>
+
+                {/* Sensores apilados verticalmente */}
+                <div className="mt-3 flex flex-col gap-2">
+                  {device.capabilities?.has_humidity && (
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 w-48">
+                      <div className="flex items-center gap-2">
+                        <Droplet className="text-sky-500" size={16} />
+                        <span className="text-sm font-medium text-slate-700">Humedad</span>
+                      </div>
+                      <div className="text-sm font-bold text-slate-800">{device.last_humidity ?? '--'}%</div>
+                    </div>
+                  )}
+
+                  {device.capabilities?.has_luminosity && (
+                    <div className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 w-48">
+                      <div className="flex items-center gap-2">
+                        <Waves className="text-amber-400" size={16} />
+                        <span className="text-sm font-medium text-slate-700">Luminosidad</span>
+                      </div>
+                      <div className="text-sm font-bold text-slate-800">{device.last_luminosity ?? '--'} lx</div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="pl-2">
-              {device.type === 'actuator' ? (
-                <button 
+            <div className="pl-2 flex items-center gap-2">
+              {device.capabilities?.has_pump && (
+                <button
                   type="button"
                   onClick={(e) => {
-                    e.stopPropagation(); 
-                    toggleDevice(device.id);
+                    e.stopPropagation();
+                    // toggle pump independently
+                    const current = device.settings?.pump_state || device.settings?.pump_state === 'ON';
+                    const next = (device.settings?.pump_state === 'ON') ? 'OFF' : 'ON';
+                    togglePumpState(device.id, next).then(res => {
+                      if (res.ok) {
+                        setDevices(prev => prev.map(d => d.id === device.id ? { ...d, settings: { ...d.settings, pump_state: next } } : d));
+                      } else {
+                        alert('No se pudo accionar la bomba');
+                      }
+                    });
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-colors duration-200 ${
-                    device.isActive 
-                      ? 'bg-[#E6F8F5] text-primary' 
-                      : 'bg-[#F3F4F6] text-slate-400'
-                  }`}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wider bg-[#E6F8F5] text-primary"
                 >
-                  {device.isActive ? 'ON' : 'OFF'}
+                  Bomba
                 </button>
-              ) : (
-                <button 
+              )}
+
+              {device.capabilities?.has_lamp && (
+                <button
                   type="button"
                   onClick={(e) => {
-                    e.stopPropagation(); // <-- ESTO EVITA QUE FALLE
-                    toggleDevice(device.id); // <-- USAMOS LA MISMA LÓGICA DE ARRIBA
+                    e.stopPropagation();
+                    const next = (device.settings?.lamp_state === 'ON') ? 'OFF' : 'ON';
+                    toggleLampState(device.id, next).then(res => {
+                      if (res.ok) {
+                        setDevices(prev => prev.map(d => d.id === device.id ? { ...d, settings: { ...d.settings, lamp_state: next } } : d));
+                      } else {
+                        alert('No se pudo accionar la luz');
+                      }
+                    });
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-colors duration-200 ${
-                    device.isActive 
-                      ? 'bg-[#E6F8F5] text-primary' 
-                      : 'bg-[#F3F4F6] text-slate-400 hover:bg-slate-200'
-                  }`} 
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-bold tracking-wider bg-[#FFFAEB] text-amber-600"
                 >
-                  {device.isActive ? 'ON' : 'OFF'}
+                  Foco
+                </button>
+              )}
+
+              {/* Fallback single toggle for legacy devices */}
+              {!device.capabilities?.has_pump && !device.capabilities?.has_lamp && (
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); toggleDevice(device.id); }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-colors duration-200 bg-slate-100 text-slate-600`}
+                >
+                  Detalle
                 </button>
               )}
             </div>

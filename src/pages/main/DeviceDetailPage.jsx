@@ -3,11 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Droplet, Waves, Loader2, Cpu, Activity } from 'lucide-react';
 import { Card } from '../../components/ui/Card'; 
 import { 
-  getDeviceDetails,       
-  toggleDeviceState,      
-  updateDeviceSettings,   
-  getDeviceSensorData,     
-  getDeviceSensorHistory   
+  getDeviceDetails,      
+  toggleDeviceState,     
+  togglePumpState,       
+  toggleLampState,       
+  updateDeviceSettings,  
+  updateWaterSettings,   
+  updateLightSettings,   
+  getDeviceSensorData,   
+  getDeviceSensorHistory
 } from '../../services/deviceService';
 
 // Importaciones para la gráfica
@@ -33,13 +37,20 @@ export const DeviceDetailPage = () => {
     name: 'Cargando...',
     is_online: false,
     current_state: 'OFF',
-    capabilities: { has_pump: false, has_humidity: false }
+    capabilities: { has_pump: false, has_humidity: false, has_luminosity: false, has_lamp: false }
   });
 
   const [settings, setSettings] = useState({
     auto_water: false,
     humidity_threshold: 30
   });
+
+  const [lightSettings, setLightSettings] = useState({
+    auto_light: false,
+    light_threshold: 300
+  });
+
+  const [lampState, setLampState] = useState('OFF');
 
   // =========================================================================
   // EFECTO 1: Detalles del dispositivo y Actualización de Valor Actual (Cada 5s)
@@ -54,15 +65,21 @@ export const DeviceDetailPage = () => {
           setDevice({
             name: devData.name,
             is_online: devData.is_online,
-            // CORRECCIÓN AQUÍ: Tomamos 'state' directamente de tu JSON
             current_state: devData.state || 'OFF', 
             capabilities: devData.capabilities || { has_pump: true, has_humidity: true }
           });
-          
+
           setSettings({
             auto_water: devData.settings?.auto_water || false,
             humidity_threshold: devData.settings?.humidity_threshold || 30
           });
+
+          setLightSettings({
+            auto_light: devData.settings?.auto_light || false,
+            light_threshold: devData.settings?.light_threshold || 300
+          });
+
+          setLampState(devData.settings?.lamp_state || 'OFF');
         }
         
         // Carga el valor instantáneo de la tarjeta superior por primera vez
@@ -176,13 +193,57 @@ export const DeviceDetailPage = () => {
 
   const handleToggleState = async () => {
     if (settings.auto_water) return;
+    // toggle pump independently if device supports it
+    if (device.capabilities?.has_pump) {
+      const next = device.current_state === 'ON' ? 'OFF' : 'ON';
+      setDevice(prev => ({ ...prev, current_state: next }));
+      const res = await togglePumpState(id, next);
+      if (!res.ok) {
+        setDevice(prev => ({ ...prev, current_state: prev.current_state === 'ON' ? 'OFF' : 'ON' }));
+        alert('Error al accionar la bomba');
+      }
+      return;
+    }
+
+    // Fallback to generic toggle
     const newState = device.current_state === 'ON' ? 'OFF' : 'ON';
     setDevice(prev => ({ ...prev, current_state: newState }));
-
     const res = await toggleDeviceState(id, newState);
     if (!res.ok) {
       setDevice(prev => ({ ...prev, current_state: prev.current_state === 'ON' ? 'OFF' : 'ON' }));
-      alert('Error al accionar la bomba');
+      alert('Error al accionar el dispositivo');
+    }
+  };
+
+  const handleToggleLamp = async () => {
+    const next = lampState === 'ON' ? 'OFF' : 'ON';
+    setLampState(next);
+    const res = await toggleLampState(id, next);
+    if (!res.ok) {
+      setLampState(prev => (prev === 'ON' ? 'OFF' : 'ON'));
+      alert('Error al accionar la luz');
+    }
+  };
+
+  const handleSaveWaterSettings = async () => {
+    setIsSaving(true);
+    const res = await updateWaterSettings(id, settings);
+    setIsSaving(false);
+    if (!res.ok) {
+      alert('Error al guardar configuración de riego');
+    } else {
+      alert('Configuración de riego guardada');
+    }
+  };
+
+  const handleSaveLightSettings = async () => {
+    setIsSaving(true);
+    const res = await updateLightSettings(id, lightSettings);
+    setIsSaving(false);
+    if (!res.ok) {
+      alert('Error al guardar configuración de iluminación');
+    } else {
+      alert('Configuración de iluminación guardada');
     }
   };
 
@@ -350,8 +411,49 @@ export const DeviceDetailPage = () => {
                 </button>
               </div>
             )}
+
+            <div className="mt-4 flex justify-end">
+              <button onClick={handleSaveWaterSettings} className="px-4 py-2 bg-slate-900 text-white rounded-lg font-medium">Guardar Riego</button>
+            </div>
           </Card>
         )}
+
+        {/* Bloque de Iluminación */}
+        {device.capabilities?.has_luminosity || device.capabilities?.has_lamp ? (
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Iluminación Inteligente</h3>
+                <p className="text-sm text-slate-500 mt-1">Automatiza según la luminosidad</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" className="sr-only peer" checked={lightSettings.auto_light} onChange={(e) => setLightSettings({...lightSettings, auto_light: e.target.checked})} />
+                <div className="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-400 shadow-inner"></div>
+              </label>
+            </div>
+
+            {lightSettings.auto_light ? (
+              <div className="pt-4 border-t border-slate-100">
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-semibold text-slate-700">Encender cuando esté por debajo de:</span>
+                  <span className="text-sm font-bold text-amber-600">{lightSettings.light_threshold} lx</span>
+                </div>
+                <input type="range" min="0" max="2000" value={lightSettings.light_threshold} onChange={(e) => setLightSettings({...lightSettings, light_threshold: parseInt(e.target.value)})} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-400" />
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700">Control Manual</span>
+                <button onClick={handleToggleLamp} className={`w-[50px] h-[28px] flex items-center rounded-full p-1 transition-colors duration-300 ${lampState === 'ON' ? 'bg-amber-400' : 'bg-slate-300'}`}>
+                  <div className={`bg-white w-[20px] h-[20px] rounded-full shadow-sm transform transition-transform duration-300 ${lampState === 'ON' ? 'translate-x-[22px]' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            )}
+
+            <div className="mt-4 flex justify-end">
+              <button onClick={handleSaveLightSettings} className="px-4 py-2 bg-amber-400 text-amber-900 rounded-lg font-medium">Guardar Iluminación</button>
+            </div>
+          </Card>
+        ) : null}
       </div>
 
       {/* Botón Flotante para Guardar Ajustes */}
