@@ -1,233 +1,144 @@
+const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
 /**
- * Servicio para gestionar los dispositivos del usuario autenticado
- * Autor: Gael Ceballos Nava
- * Descripción: Este servicio se encarga de manejar las peticiones relacionadas con los
- * dispositivos del usuario autenticado, como la obtención de la lista de dispositivos,
- * la configuración de propiedades y el control de los dispositivos.
+ * MOTOR CENTRAL DE PETICIONES (API REQUEST)
+ * Procesa todas las llamadas HTTP inyectando tokens y resolviendo try/catch en un solo lugar.
  */
-
-// ============================================================================
-//                     Funciones para DashboardPage
-// ============================================================================
-
-const API_URL = 'https://d12d-200-56-155-6.ngrok-free.app';
-
-/**
- * Obtiene los dispositivos del usuario autenticado
- */
-export const getUserDevices = async () => {
+const apiRequest = async (endpoint, method = 'GET', body = null) => {
   try {
     const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
     
-    const response = await fetch(`${API_URL}/api/my-devices`, {
-      method: 'GET',
+    const config = {
+      method,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': `Bearer ${token}` 
+        'Authorization': `Bearer ${token}`,
+        'ngrok-skip-browser-warning': 'true'
       }
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-    
-  } catch (error) {
-    console.error("Error obteniendo dispositivos:", error);
-    return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
-  }
-};
-
-/**
- * Obtiene la lista de dispositivos disponibles para ser vinculados
- */
-export const getAvailableDevices = async () => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    
-    const response = await fetch(`${API_URL}/api/devices/available`, { 
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error("Error al buscar dispositivos disponibles:", error);
-    return { ok: false, data: { message: 'Error de conexión.' } };
-  }
-};
-
-/**
- * Vincula un dispositivo a la cuenta del usuario
- */
-export const claimDevice = async (deviceId) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    
-    const response = await fetch(`${API_URL}/api/devices/${deviceId}/add`, { 
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error("Error al vincular el dispositivo:", error);
-    return { ok: false, data: { message: 'Error de conexión.' } };
-  }
-};
-
-/**
- * Cambia el estado del actuador (ON/OFF)
- */
-export const toggleDeviceState = async (deviceId, state) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    
-    const response = await fetch(`${API_URL}/api/my-devices/${deviceId}/toggle`, { 
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ state }) 
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error("Error al cambiar el estado del dispositivo:", error);
-    return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
-  }
-};
-
-// ============================================================================
-//                     Funciones para DeviceDetailPage 
-// ============================================================================
-
-/**
- * Obtiene los detalles básicos y las propiedades del dispositivo
- */
-export const getDeviceDetails = async (id) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    
-    // Cambiamos /devices/ por /my-devices/
-    const response = await fetch(`${API_URL}/api/my-devices/${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}` 
-      }
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error('Error obteniendo detalles del dispositivo:', error);
-    return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
-  }
-};
-
-/**
- * Obtiene el historial de lecturas de sensores de un dispositivo
- */
-export const getDeviceSensorData = async (id) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    
-    const response = await fetch(`${API_URL}/api/sensor-data?device_id=${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}` 
-      }
-    });
-
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error('Error obteniendo el historial del sensor:', error);
-    return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
-  }
-};
-
-/**
- * Guarda o actualiza las propiedades del Riego Inteligente (auto_water, humidity_threshold)
- */
-export const updateDeviceSettings = async (id, settings) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['"]+/g, '');
-    const headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}` 
     };
 
-    // 1. Petición para guardar el estado del riego automático (auto_water)
-    const resAuto = await fetch(`${API_URL}/api/my-devices/${id}/properties`, {
-      method: 'PUT', 
-      headers,
-      body: JSON.stringify({
-        property_key: 'auto_water',
-        property_value: settings.auto_water ? 'true' : 'false' // Lo mandamos como string porque es llave-valor
-      })
-    });
-
-    // 2. Petición para guardar el nivel de humedad (humidity_threshold)
-    const resHum = await fetch(`${API_URL}/api/my-devices/${id}/properties`, {
-      method: 'PUT', 
-      headers,
-      body: JSON.stringify({
-        property_key: 'humidity_threshold',
-        property_value: settings.humidity_threshold.toString() // Convertimos el número a string
-      })
-    });
-
-    // Validamos que ambas peticiones hayan sido exitosas
-    if (!resAuto.ok || !resHum.ok) {
-        return { ok: false, data: { message: 'Error al validar las propiedades en el servidor.' } };
+    if (body) {
+      config.body = JSON.stringify(body);
     }
 
-    return { ok: true };
+    const response = await fetch(`${API_URL}${endpoint}`, config);
     
+    const contentType = response.headers.get("content-type");
+    let data = {};
+    
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      // Si el servidor devolvió HTML (error 500, advertencia de Ngrok, etc.)
+      const textError = await response.text();
+      console.warn("⚠️ Advertencia: El servidor respondió con HTML en lugar de JSON:", textError.substring(0, 200));
+      return { 
+        ok: false, 
+        data: { message: `Respuesta inesperada del servidor (Código ${response.status}).` } 
+      };
+    }
+    
+    return { ok: response.ok, data };
   } catch (error) {
-    console.error('Error guardando configuraciones:', error);
+    console.error(`Error de red en [${method}] ${endpoint}:`, error);
     return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
   }
 };
 
 /**
- * Obtiene el historial de lecturas promediadas (agregadas) desde el backend
+ * ============================================================================
+ * 1. OBTENCIÓN Y CONSULTA DE DISPOSITIVOS
+ * ============================================================================
  */
-export const getDeviceSensorHistory = async (id, period, sensorTypeId = 1) => {
-  try {
-    const token = localStorage.getItem('auth_token')?.replace(/['\"]+/g, '');
-    
-    const response = await fetch(`${API_URL}/api/sensor-data/history?device_id=${id}&sensor_type_id=${sensorTypeId}&period=${period}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}` 
-      }
-    });
 
-    const data = await response.json();
-    return { ok: response.ok, data };
-  } catch (error) {
-    console.error('Error obteniendo el historial promediado del sensor:', error);
-    return { ok: false, data: { message: 'Error de conexión con el servidor.' } };
-  }
+// Obtiene los dispositivos vinculados al usuario (Route::get('/my-devices'))
+export const getUserDevices = () => apiRequest('/api/my-devices', 'GET');
+
+// Obtiene el detalle de un dispositivo específico (Route::get('/my-devices/{id}'))
+export const getDeviceDetails = (id) => apiRequest(`/api/my-devices/${id}`, 'GET');
+
+//Obtiene las lecturas más recientes en tiempo real de los sensores del dispositivo
+export const getDeviceRealTimeData = (deviceId) => 
+  apiRequest(`/api/sensor-data?device_id=${deviceId}`, 'GET');
+
+// Obtiene el historial de lecturas (Route::get('sensor-data/history'))
+export const getDeviceSensorHistory = (deviceId, sensorTypeKey, filter) => {
+  // Traducimos los filtros de la vista al periodo que espera el backend
+  const periodMap = {
+    '24h': 'day',
+    '7d':  'week',
+    '30d': 'month'
+  };
+  const period = periodMap[filter] || 'day';
+
+  return apiRequest(
+    `/api/sensor-data/history?device_id=${deviceId}&sensor_type_key=${sensorTypeKey}&period=${period}`, 
+    'GET'
+  );
+};
+
+
+/**
+ * ============================================================================
+ * 2. VINCULACIÓN DE NUEVOS DISPOSITIVOS 
+ * ============================================================================
+ */
+
+/**
+ * Busca dispositivos que no pertenecen a nadie y están listos para vincular.
+ * Mapea directamente a: Route::get('/devices/available') en tu api.php
+ */
+export const getAvailableDevices = () => apiRequest('/api/devices/available', 'GET');
+
+/**
+ * Enlaza un dispositivo disponible a la cuenta del usuario autenticado.
+ * Mapea directamente a: Route::post('/devices/{id}/add') en tu api.php
+ */
+export const addDevice = (id) => apiRequest(`/api/devices/${id}/add`, 'POST');
+
+// Alias de compatibilidad para evitar el error en la pantalla de login/vinculación
+export const claimDevice = addDevice;
+
+
+/**
+ * ============================================================================
+ * 3. CONTROL MANUAL Y PROPIEDADES (NÚCLEO DINÁMICO)
+ * ============================================================================
+ */
+
+// Modifica una propiedad en device_properties (Route::put('/my-devices/{id}/properties'))
+export const updateDeviceProperty = (deviceId, propertyKey, propertyValue) => {
+  return apiRequest(`/api/my-devices/${deviceId}/properties`, 'PUT', {
+    property_key: propertyKey,
+    property_value: String(propertyValue)
+  });
+};
+
+// Modifica la columna física 'current_state' de la tabla 'devices' (Bomba) 
+export const togglePumpState = (deviceId, state) => 
+  apiRequest(`/api/my-devices/${deviceId}/toggle`, 'POST', { state });
+
+// Modifica la propiedad 'lamp_state' para el Foco usando la estructura dinámica
+export const toggleLampState = (deviceId, state) => 
+  updateDeviceProperty(deviceId, 'lamp_state', state);
+
+
+/**
+ * ============================================================================
+ * 4. GUARDADO DE BLOQUES DE CONFIGURACIÓN
+ * ============================================================================
+ */
+
+// Actualiza las configuraciones del bloque de Riego (auto_water y humidity_threshold)
+export const updateWaterSettings = async (id, settings) => {
+  const resAuto = await updateDeviceProperty(id, 'auto_water', settings.auto_water);
+  const resThreshold = await updateDeviceProperty(id, 'humidity_threshold', settings.humidity_threshold);
+  return { ok: resAuto.ok && resThreshold.ok };
+};
+
+// Actualiza las configuraciones del bloque de Iluminación (auto_light y light_threshold)
+export const updateLightSettings = async (id, settings) => {
+  const resAuto = await updateDeviceProperty(id, 'auto_light', settings.auto_light);
+  const resThreshold = await updateDeviceProperty(id, 'light_threshold', settings.light_threshold);
+  return { ok: resAuto.ok && resThreshold.ok };
 };

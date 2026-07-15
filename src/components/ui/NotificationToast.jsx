@@ -13,9 +13,25 @@ export const NotificationToast = () => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    // determine excluded routes
+    // Determinar rutas excluidas (sin sesión o sin notificaciones)
     const path = location.pathname || '';
-    const excluded = path.startsWith('/perfil/notificaciones') || path.startsWith('/perfil/configuracion');
+    const token = localStorage.getItem('auth_token');
+    
+    // Excluir: login, registro, y rutas de configuración
+    const excluded = 
+      !token ||
+      path.startsWith('/login') || 
+      path.startsWith('/registro') ||
+      path.startsWith('/perfil/notificaciones') || 
+      path.startsWith('/perfil/configuracion');
+
+    // Si estamos en ruta excluida, limpiar todo
+    if (excluded) {
+      setQueue([]);
+      setCurrent(null);
+      setVisible(false);
+      return;
+    }
 
     // compute new unread notifications (ids not in prev)
     const currentIds = new Set(unread.map((u) => u.id));
@@ -40,11 +56,12 @@ export const NotificationToast = () => {
       setQueue((q) => q.slice(1));
       setVisible(true);
 
-      // auto-dismiss after 4s
+      // auto-dismiss after 5s
       timerRef.current = setTimeout(() => {
         setVisible(false);
+        // Limpiar después de la animación
         setTimeout(() => setCurrent(null), 300);
-      }, 4000);
+      }, 5000);
     }
     return () => {
       if (timerRef.current) {
@@ -67,5 +84,6 @@ export const NotificationToast = () => {
     </div>
   );
 };
+
 
 export default NotificationToast;
