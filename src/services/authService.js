@@ -6,7 +6,7 @@
  * recuperación de contraseña, etc. según las necesidades de la aplicación.
  */
 
-const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
+const API_URL = 'https://ea8d-200-56-155-6.ngrok-free.app';
 
 export const loginUser = async (email, password) => {
   try {

@@ -1,4 +1,4 @@
-const API_URL = 'https://254f-200-56-155-6.ngrok-free.app';
+const API_URL = 'https://ea8d-200-56-155-6.ngrok-free.app';
 /**
  * MOTOR CENTRAL DE PETICIONES (API REQUEST)
  * Procesa todas las llamadas HTTP inyectando tokens y resolviendo try/catch en un solo lugar.
@@ -61,21 +61,92 @@ export const getDeviceDetails = (id) => apiRequest(`/api/my-devices/${id}`, 'GET
 export const getDeviceRealTimeData = (deviceId) => 
   apiRequest(`/api/sensor-data?device_id=${deviceId}`, 'GET');
 
-// Obtiene el historial de lecturas (Route::get('sensor-data/history'))
-export const getDeviceSensorHistory = (deviceId, sensorTypeKey, filter) => {
-  // Traducimos los filtros de la vista al periodo que espera el backend
-  const periodMap = {
-    '24h': 'day',
-    '7d':  'week',
-    '30d': 'month'
-  };
-  const period = periodMap[filter] || 'day';
+/**
+   * CARGAR EL HISTORIAL DE LAS DOS GRÁFICAS POR SEPARADO
+   */
+  const fetchHistoryData = async (targetDevice, filter) => {
+    const hasHumidity = targetDevice.capabilities?.has_humidity ?? false;
+    const hasLuminosity = targetDevice.capabilities?.has_luminosity ?? false;
 
-  return apiRequest(
-    `/api/sensor-data/history?device_id=${deviceId}&sensor_type_key=${sensorTypeKey}&period=${period}`, 
-    'GET'
-  );
-};
+    //FUNCIÓN PARA CONVERTIR Y FORMATEAR A LA ZONA HORARIA DEL USUARIO
+    const formatLocalTime = (serverDateString, currentFilter) => {
+      if (!serverDateString) return '';
+      // Si envía fecha completa (ej. "2026-07-23 19:03:37"), lo convertimos:
+      if (serverDateString.includes('-')) {
+        // Reemplazamos espacio por 'T' y agregamos 'Z' si el servidor guarda en UTC, 
+        // o déjalo sin 'Z' para que el navegador compense el desfase local:
+        const date = new Date(serverDateString.replace(' ', 'T'));
+        
+        // Formateo según el filtro temporal seleccionado
+        if (currentFilter === '24h') {
+          // Para vista de un día, solo mostramos la hora local (ej: "07:03 PM")
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else {
+          // Para 7 o 30 días, mostramos día y hora local (ej: "23 Jul, 07:03 PM")
+          return date.toLocaleDateString([], { 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        }
+      }
+      return serverDateString;
+    };
+
+    try {
+      const promises = [];
+
+      if (hasHumidity) {
+        promises.push(
+          getDeviceSensorHistory(id, 'humedad_suelo', filter).then(res => {
+            if (res.ok && res.data?.status === 'success') {
+              return {
+                type: 'humidity',
+                data: res.data.data.map(item => ({
+                  // 🔥 Aplicamos la conversión a la etiqueta del eje X
+                  timestamp: formatLocalTime(item.label, filter),
+                  value: Number(item.value || 0)
+                }))
+              };
+            }
+            return { type: 'humidity', data: [] };
+          })
+        );
+      }
+
+      if (hasLuminosity) {
+        promises.push(
+          getDeviceSensorHistory(id, 'luminosidad', filter).then(res => {
+            if (res.ok && res.data?.status === 'success') {
+              return {
+                type: 'luminosity',
+                data: res.data.data.map(item => ({
+                  // 🔥 Aplicamos la conversión a la etiqueta del eje X
+                  timestamp: formatLocalTime(item.label, filter),
+                  value: Number(item.value || 0)
+                }))
+              };
+            }
+            return { type: 'luminosity', data: [] };
+          })
+        );
+      }
+
+      const results = await Promise.all(promises);
+
+      results.forEach(result => {
+        if (result.type === 'humidity') {
+          setHumidityChartData(result.data);
+        } else if (result.type === 'luminosity') {
+          setLightChartData(result.data);
+        }
+      });
+
+    } catch (error) {
+      console.error("Error cargando historial de gráficas:", error);
+    }
+  };
 
 
 /**
