@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { BottomNav } from '../../components/layout/BottomNav'; 
-import { getUserDevices, getDeviceSensorHistory } from '../../services/deviceService';
+import { getUserDevices } from '../../services/deviceService';
 import { Loader2, Droplet, Activity, Cpu, Waves, Sun, Lightbulb } from 'lucide-react';
 
 export const ReportsPage = () => {
@@ -54,13 +54,10 @@ export const ReportsPage = () => {
           let totalLuminositySum = 0;
           let totalLuminosityCount = 0;
 
-          const historyPromises = [];
-
-          // 2. Procesar lecturas según las capacidades reales de cada dispositivo
+          // 2. Procesar lecturas directamente desde el historial embebido en cada dispositivo
           devices.forEach(d => {
             const capabilities = d.capabilities || {};
 
-            // Caso A: Si el backend devuelve el historial embebido en el dispositivo
             if (Array.isArray(d.history) && d.history.length > 0) {
               d.history.forEach(reading => {
                 const val = parseFloat(reading.reading_value ?? reading.value);
@@ -77,54 +74,14 @@ export const ReportsPage = () => {
                   totalLuminosityCount++;
                 }
               });
-            } 
-            // Caso B: Si hay que consultar endpoints individuales para historial
-            else {
-              if (capabilities.has_humidity) {
-                historyPromises.push(
-                  getDeviceSensorHistory(d.id, 'humedad_suelo', '7d')
-                    .then(res => ({ type: 'humidity', res }))
-                    .catch(() => null)
-                );
-              }
-              if (capabilities.has_luminosity) {
-                historyPromises.push(
-                  getDeviceSensorHistory(d.id, 'luminosidad', '7d')
-                    .then(res => ({ type: 'luminosity', res }))
-                    .catch(() => null)
-                );
-              }
             }
           });
 
-          // 3. Procesar respuestas de endpoints independientes si se ejecutaron
-          if (historyPromises.length > 0) {
-            const historiesRes = await Promise.all(historyPromises);
-            historiesRes.forEach(item => {
-              if (!item?.res?.ok) return;
-              const readings = item.res.data?.data || item.res.data || [];
-              if (Array.isArray(readings)) {
-                readings.forEach(reading => {
-                  const val = parseFloat(reading.reading_value ?? reading.value);
-                  if (!isNaN(val)) {
-                    if (item.type === 'humidity') {
-                      totalHumiditySum += val;
-                      totalHumidityCount++;
-                    } else if (item.type === 'luminosity') {
-                      totalLuminositySum += val;
-                      totalLuminosityCount++;
-                    }
-                  }
-                });
-              }
-            });
-          }
-
-          // 4. Calcular promedios
+          // 3. Calcular promedios
           const avgHum = totalHumidityCount > 0 ? (totalHumiditySum / totalHumidityCount) : 0;
           const avgLum = totalLuminosityCount > 0 ? (totalLuminositySum / totalLuminosityCount) : 0;
 
-          // 5. Leyenda acorde al porcentaje del estado general de la humedad
+          // 4. Leyenda acorde al porcentaje del estado general de la humedad
           let health = 'Óptimo: Humedad Ideal';
           let healthColor = 'text-emerald-500';
 
