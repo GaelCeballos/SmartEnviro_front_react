@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Droplet, Sun, Lightbulb, Loader2, RefreshCw } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
@@ -9,7 +9,7 @@ import {
   updateWaterSettings,   
   updateLightSettings,   
   getDeviceSensorHistory,
-  getDeviceRealTimeData // Llamamos a nuestro nuevo endpoint
+  getDeviceRealTimeData
 } from '../../services/deviceService';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -31,6 +31,14 @@ export const DeviceDetailPage = () => {
   const [lightChartData, setLightChartData] = useState([]);
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [timeFilter, setTimeFilter] = useState('24h');
+
+  // NUEVO: Referencia mutable para que setInterval siempre vea el filtro actual
+  const timeFilterRef = useRef(timeFilter);
+
+  // NUEVO: Actualizamos la referencia cada que el usuario cambia de filtro
+  useEffect(() => {
+    timeFilterRef.current = timeFilter;
+  }, [timeFilter]);
 
   // Estados locales para Riego Inteligente
   const [autoWater, setAutoWater] = useState(false);
@@ -96,9 +104,9 @@ export const DeviceDetailPage = () => {
         }
       }
 
-      // C. Cargar las gráficas correspondientes
+      // C. Cargar las gráficas correspondientes usando la referencia en lugar del estado directo
       if (targetDevice) {
-        await fetchHistoryData(targetDevice, timeFilter);
+        await fetchHistoryData(targetDevice, timeFilterRef.current);
       }
 
     } catch (error) {
