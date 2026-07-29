@@ -14,7 +14,8 @@ export const ReportsPage = () => {
     wateringDevices: 0,
     activeLights: 0,
     hasLightDevices: false,
-    healthStatus: 'Calculando...'
+    healthStatus: 'Calculando...',
+    healthColor: 'text-slate-400'
   });
 
   useEffect(() => {
@@ -29,60 +30,121 @@ export const ReportsPage = () => {
           
           const total = devices.length;
           const online = devices.filter(d => d.is_online).length;
-          const watering = devices.filter(d => d.current_state === 'ON' || d.current_state === 'WATERING').length;
+          const watering = devices.filter(d => 
+            d.current_state === 'ON' || 
+            d.current_state === 'WATERING' || 
+            d.is_watering === true
+          ).length;
 
-          // Detectar si existe algún dispositivo con capacidades de luz/iluminación
+          // Detectar si existe algún dispositivo con capacidades de iluminación o sensor de luz
           const hasLight = devices.some(d => 
-            d.capabilities?.has_light_sensor === true || 
-            d.capabilities?.has_light === true ||
-            d.last_luminosity !== undefined
+            d.capabilities?.has_luminosity === true || 
+            d.capabilities?.has_lamp === true
           );
 
           // Contar focos encendidos actualmente
           const activeLights = devices.filter(d => 
-            d.settings?.lamp_state === 'ON' || 
-            d.current_lamp_state === 'ON'
+            d.lamp_state === 'ON' ||
+            d.current_lamp_state === 'ON' ||
+            d.settings?.lamp_state === 'ON'
           ).length;
 
-          // Calcular promedio de luminosidad en base a dispositivos con sensor activo
-          const devicesWithLuminosity = devices.filter(d => 
-            d.last_luminosity !== null && 
-            d.last_luminosity !== undefined
-          );
-          const avgLum = devicesWithLuminosity.length > 0
-            ? (devicesWithLuminosity.reduce((sum, d) => sum + parseFloat(d.last_luminosity), 0) / devicesWithLuminosity.length)
-            : 0;
-
-          // 2. Obtener el historial de la SEMANA de TODOS los dispositivos
-          const historyPromises = devices.map(d => getDeviceSensorHistory(d.id, 'week', 1));
-          const historiesRes = await Promise.all(historyPromises);
-
           let totalHumiditySum = 0;
-          let totalReadingsCount = 0;
+          let totalHumidityCount = 0;
+          let totalLuminositySum = 0;
+          let totalLuminosityCount = 0;
 
-          // 3. Sumar y promediar todas las lecturas devueltas
-          historiesRes.forEach(res => {
-            if (res.ok && res.data?.data) {
-              res.data.data.forEach(reading => {
-                totalHumiditySum += parseFloat(reading.value);
-                totalReadingsCount += 1;
+          const historyPromises = [];
+
+          // 2. Procesar lecturas según las capacidades reales de cada dispositivo
+          devices.forEach(d => {
+            const capabilities = d.capabilities || {};
+
+            // Caso A: Si el backend devuelve el historial embebido en el dispositivo
+            if (Array.isArray(d.history) && d.history.length > 0) {
+              d.history.forEach(reading => {
+                const val = parseFloat(reading.reading_value ?? reading.value);
+                if (isNaN(val)) return;
+
+                const metric = reading.sensor_type?.metric_key;
+
+                if (capabilities.has_humidity && metric === 'humedad_suelo') {
+                  totalHumiditySum += val;
+                  totalHumidityCount++;
+                }
+                if (capabilities.has_luminosity && metric === 'luminosidad') {
+                  totalLuminositySum += val;
+                  totalLuminosityCount++;
+                }
               });
+            } 
+            // Caso B: Si hay que consultar endpoints individuales para historial
+            else {
+              if (capabilities.has_humidity) {
+                historyPromises.push(
+                  getDeviceSensorHistory(d.id, 'humedad_suelo', '7d')
+                    .then(res => ({ type: 'humidity', res }))
+                    .catch(() => null)
+                );
+              }
+              if (capabilities.has_luminosity) {
+                historyPromises.push(
+                  getDeviceSensorHistory(d.id, 'luminosidad', '7d')
+                    .then(res => ({ type: 'luminosity', res }))
+                    .catch(() => null)
+                );
+              }
             }
           });
 
-          const avgHum = totalReadingsCount > 0 ? (totalHumiditySum / totalReadingsCount) : 0;
+          // 3. Procesar respuestas de endpoints independientes si se ejecutaron
+          if (historyPromises.length > 0) {
+            const historiesRes = await Promise.all(historyPromises);
+            historiesRes.forEach(item => {
+              if (!item?.res?.ok) return;
+              const readings = item.res.data?.data || item.res.data || [];
+              if (Array.isArray(readings)) {
+                readings.forEach(reading => {
+                  const val = parseFloat(reading.reading_value ?? reading.value);
+                  if (!isNaN(val)) {
+                    if (item.type === 'humidity') {
+                      totalHumiditySum += val;
+                      totalHumidityCount++;
+                    } else if (item.type === 'luminosity') {
+                      totalLuminositySum += val;
+                      totalLuminosityCount++;
+                    }
+                  }
+                });
+              }
+            });
+          }
 
-          // 4. Calcular el "Estado de Salud" general
-          let health = 'Óptimo';
+          // 4. Calcular promedios
+          const avgHum = totalHumidityCount > 0 ? (totalHumiditySum / totalHumidityCount) : 0;
+          const avgLum = totalLuminosityCount > 0 ? (totalLuminositySum / totalLuminosityCount) : 0;
+
+          // 5. Leyenda acorde al porcentaje del estado general de la humedad
+          let health = 'Óptimo: Humedad Ideal';
           let healthColor = 'text-emerald-500';
+
           if (total === 0) {
             health = 'Sin dispositivos';
             healthColor = 'text-slate-400';
+          } else if (avgHum === 0 && totalHumidityCount === 0) {
+            health = 'Sin datos de lectura';
+            healthColor = 'text-slate-400';
           } else if (avgHum < 30) {
-            health = 'Crítico (Muy seco)';
+            health = 'Crítico: Suelo Muy Seco';
             healthColor = 'text-rose-500';
+          } else if (avgHum >= 30 && avgHum <= 60) {
+            health = 'Óptimo: Humedad Ideal';
+            healthColor = 'text-emerald-500';
+          } else if (avgHum > 60 && avgHum <= 80) {
+            health = 'Bueno: Humedad Alta';
+            healthColor = 'text-sky-500';
           } else if (avgHum > 80) {
-            health = 'Atención (Exceso de humedad)';
+            health = 'Atención: Exceso de Humedad';
             healthColor = 'text-amber-500';
           }
 
